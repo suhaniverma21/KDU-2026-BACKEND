@@ -1,6 +1,6 @@
 package com.springSecurity.hands_on.Repositories;
 
-import com.springSecurity.hands_on.User;
+import com.springSecurity.hands_on.entity.User;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;

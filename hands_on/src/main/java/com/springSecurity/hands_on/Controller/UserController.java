@@ -1,14 +1,10 @@
-package com.springSecurity.hands_on.Controller;
+package com.springSecurity.hands_on.controller;
 
-import com.springSecurity.hands_on.DTO.LoginRequestDTO;
-import com.springSecurity.hands_on.DTO.LoginResponseDTO;
-import com.springSecurity.hands_on.DTO.UserRequestDTO;
-import com.springSecurity.hands_on.DTO.UserResponseDTO;
-import com.springSecurity.hands_on.Service.UserService;
-import com.springSecurity.hands_on.User;
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import com.springSecurity.hands_on.dto.UserRequestDTO;
+import com.springSecurity.hands_on.dto.UserResponseDTO;
+import com.springSecurity.hands_on.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,35 +13,44 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 public class UserController {
+
     private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    @PostMapping("/register")
-    public UserResponseDTO  register(@RequestBody UserRequestDTO dto) {
-        return userService.register(dto);
-    }
-    @PostMapping("/login")
-    public LoginResponseDTO login(@RequestBody LoginRequestDTO dto) {
-        return userService.login(dto);
-    }
-    @GetMapping("/me")
-    public String me() {
-        return "Hello, secured user!";
-    }
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<User> deleteUser(@PathVariable Long id)
-    {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+    @PreAuthorize("hasAnyRole('BASIC','ADMIN')")
+    @GetMapping
+    public List<UserResponseDTO> getUsers() {
+        return userService.getAllUsers()
+                .stream()
+                .map(user -> {
+                    UserResponseDTO dto = new UserResponseDTO();
+                    dto.setId(user.getId());
+                    dto.setUserName(user.getUserName());
+                    dto.setEmail(user.getEmail());
+                    dto.setRoles(user.getRoles());
+                    return dto;
+                })
+                .toList();
     }
 
-    @GetMapping("/users")
-    public List<User> getUsers(Authentication authentication) {
-        return userService.getAllUsers();
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public UserResponseDTO addUser(@RequestBody UserRequestDTO dto) {
+        Logger logger = LoggerFactory.getLogger(UserController.class);
+
+
+        UserResponseDTO createdUser = userService.addUser(dto);
+
+        // Log the creation
+        logger.info("User '{}' registered by ADMIN", createdUser.getUserName());
+
+        return createdUser;
     }
 
 }
+
+
